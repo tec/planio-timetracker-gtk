@@ -105,6 +105,7 @@ protected
   def add_refresh_button
       button = Gtk::MenuItem.new "Refresh projects and issues"
       button.signal_connect "activate" do |my_menu_item|
+        @server.kill_current_threads
         self.refresh
       end
       @menu.append button

@@ -41,10 +41,17 @@ class PlanioServer
   def wait_for_current_threads
     Thread.new do
       @threads.each { |thread|  
-        thread.join 
+        thread.join
       }
       yield
     end
+  end
+
+  def kill_current_threads
+    @threads.delete_if { |thread|  
+      Thread.kill thread
+      true
+    }
   end
 
   def get_projects
