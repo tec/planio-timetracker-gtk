@@ -15,6 +15,7 @@ class PlanioServer
     uri.query = URI.encode_www_form(params) unless params.nil?
 
     @threads << Thread.new(uri) do |uri|
+      Thread.current[:name] = uri.path
       req = Net::HTTP::Get.new(uri.request_uri)
       req.basic_auth @apikey, 'nopass'
 
@@ -22,6 +23,7 @@ class PlanioServer
         http.request(req)
       }
       yield res.body
+      @threads.delete Thread.current
     end
   end
 
@@ -38,10 +40,10 @@ class PlanioServer
 
   def wait_for_current_threads
     Thread.new do
-      threads = @threads
-      threads.each { |thread|  thread.join }
-      threads.each { |thread|  @thread.delete thread }
-      puts "refreshed"
+      @threads.each { |thread|  
+        thread.join 
+      }
+      yield
     end
   end
 
@@ -72,6 +74,10 @@ class PlanioServer
 
   def track_time
     # TODO
+  end
+
+  def threads
+    @threads
   end
 end
 

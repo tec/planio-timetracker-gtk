@@ -24,6 +24,13 @@ class PlanioMenuProject
     @name       = project['name']
     create_menu issues
   end
+
+  def menu_item
+    @menu_item
+  end
+
+  protected
+
   def create_menu issues
     @menu_item = Gtk::MenuItem.new @name
     if issues.empty?
@@ -39,6 +46,7 @@ class PlanioMenuProject
       end
     end
   end
+
   def add_track_time_button
       button = Gtk::MenuItem.new "start time tracking on project"
       button.signal_connect "activate" do |my_menu_item|
@@ -47,9 +55,6 @@ class PlanioMenuProject
       end
       @menu_item.submenu.append button
       @menu_item.submenu.append Gtk::SeparatorMenuItem.new
-  end
-  def menu_item
-    @menu_item
   end
 end
 
@@ -65,6 +70,13 @@ class PlanioMenu
 
     refresh
   end
+
+  def start
+    Gtk.main
+  end
+
+protected
+
   def refresh
     @menu.children.each do |item|
       @menu.remove item
@@ -73,42 +85,31 @@ class PlanioMenu
     add_stop_time_button
     @menu.append Gtk::SeparatorMenuItem.new
     @menu.show_all
+    self.load_projects
   end
 
-  def refresh_callback
-    self.refresh
-    Gtk.timeout_add 10000 do
-      self.load_projects do
-        @menu.show_all
-        false
-      end
-      false
-    end
-  end
-  def start
-    self.load_projects do
-      @menu.show_all
-    end
-    Gtk.main
-  end
   def load_projects
     @server.get_projects do |projects| 
       projects.each do |project|
         @server.get_issues( project['id'], PlanioMenuIssue::FILTER_PARAMS_MY_OPEN ) do |issues|
           @menu.append PlanioMenuProject.new( project, issues ).menu_item
-          yield
+          @menu.show_all
         end
+      end
+      @server.wait_for_current_threads do
+        puts "projects refreshed"
       end
     end
   end
+
   def add_refresh_button
       button = Gtk::MenuItem.new "Refresh projects and issues"
       button.signal_connect "activate" do |my_menu_item|
-        puts "refreshing"
-        self.refresh_callback
+        self.refresh
       end
       @menu.append button
   end
+
   def add_stop_time_button
       button = Gtk::MenuItem.new "Stop time tracking"
       button.signal_connect "activate" do |my_menu_item|
