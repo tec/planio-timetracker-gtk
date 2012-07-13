@@ -1,8 +1,9 @@
 require "ruby-libappindicator"
 
 class PlanioMenuIssue
-  FILTER_PARAMS_MY_OPEN = {"set_filter" => "1", "f[]" => "status_id", "op[status_id]" => "o", "v[status_id][]" => "1", "f[]" => "assigned_to_id", "op[assigned_to_id]" => "=", "v[assigned_to_id][]" => "me"}
-
+  #FILTER_PARAMS_MY_OPEN = {"set_filter" => "1", "f[]" => "status_id", "op[status_id]" => "o", "v[status_id][]" => "1", "f[]" => "assigned_to_id", "op[assigned_to_id]" => "=", "v[assigned_to_id][]" => "me"}
+  #FILTER_PARAMS_MY_OPEN = {"set_filter" => "1", "f[]" => "status_id", "op[status_id]" => "o", "v[status_id][]" => "1", "f[]" => "assigned_to_id", "op[assigned_to_id]" => "=", "v[assigned_to_id][]" => "me"}
+  FILTER_PARAMS_MY_OPEN = "?set_filter=1&f[]=status_id&op[status_id]=o&v[status_id][]=1&f[]=assigned_to_id&op[assigned_to_id]=%3D&v[assigned_to_id][]=me&c[]=subject"
   def initialize issue
     @id = issue['id']
     @subject = issue['subject']
@@ -98,6 +99,7 @@ protected
       end
       @server.wait_for_current_threads do
         puts "projects refreshed"
+        #puts @server.threads.inspect
       end
     end
   end
