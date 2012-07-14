@@ -81,9 +81,7 @@ class PlanioMenu
     @menu.append Gtk::SeparatorMenuItem.new
     @menu.show_all
 
-    refresh do
-      puts "Initial load done."
-    end
+    refresh 
   end
 
   def start
@@ -92,17 +90,15 @@ class PlanioMenu
 
 protected
 
-  def refresh
+  def refresh &block
     @projects.each do |item|
       @menu.remove item
     end
     @projects.clear
-    self.load_projects do
-      yield
-    end
+    self.load_projects &block
   end
 
-  def load_projects
+  def load_projects &block
     @server.get_projects do |projects| 
       projects.each do |project|
         @server.get_issues( project['id'], PlanioMenuIssue::get_filter ) do |issues|
@@ -112,9 +108,7 @@ protected
           @menu.show_all
         end
       end
-      @server.wait_for_current_threads do
-        yield
-      end
+      @server.wait_for_current_threads &block
     end
   end
 
