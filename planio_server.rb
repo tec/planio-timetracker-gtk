@@ -12,9 +12,7 @@ class PlanioServer
 
   def request path, params = nil
     uri = URI(@base_uri + path)
-    #uri.query = URI.encode_www_form(params) unless params.nil?
-    #uri.query = "?" + params.map{|key, value| "#{key}=#{value}"}.join("&") unless params.nil?
-    uri.query = params unless params.nil?
+    uri.query = URI.encode_www_form(params) unless params.nil?
 
     @threads << Thread.new(uri) do |uri|
       Thread.current[:name] = uri.path

@@ -1,9 +1,10 @@
 require "ruby-libappindicator"
 
 class PlanioMenuIssue
-  #FILTER_PARAMS_MY_OPEN = {"set_filter" => "1", "f[]" => "status_id", "op[status_id]" => "o", "v[status_id][]" => "1", "f[]" => "assigned_to_id", "op[assigned_to_id]" => "=", "v[assigned_to_id][]" => "me"}
-  #FILTER_PARAMS_MY_OPEN = {"set_filter" => "1", "f[]" => "status_id", "op[status_id]" => "o", "v[status_id][]" => "1", "f[]" => "assigned_to_id", "op[assigned_to_id]" => "=", "v[assigned_to_id][]" => "me"}
-  FILTER_PARAMS_MY_OPEN = "?set_filter=1&f[]=status_id&op[status_id]=o&v[status_id][]=1&f[]=assigned_to_id&op[assigned_to_id]=%3D&v[assigned_to_id][]=me&c[]=subject"
+  FILTER_PARAMS        = [["set_filter", "1"]]
+  FILTER_PARAMS_OPEN   = [["f[]", "status_id"], ["op[status_id]", "o"], ["v[status_id][]", "1"]]
+  FILTER_PARAMS_MY     = [["f[]", "assigned_to_id"], ["op[assigned_to_id]", "="], ["v[assigned_to_id][]", "me"]]
+
   def initialize issue
     @id = issue['id']
     @subject = issue['subject']
@@ -13,8 +14,13 @@ class PlanioMenuIssue
       puts @id.to_s + ": " + @subject.to_s
     end
   end
+
   def menu_item
     @menu_item
+  end
+
+  def self.get_filter
+    FILTER_PARAMS + FILTER_PARAMS_OPEN + FILTER_PARAMS_MY
   end
 end
 
@@ -99,7 +105,7 @@ protected
   def load_projects
     @server.get_projects do |projects| 
       projects.each do |project|
-        @server.get_issues( project['id'], PlanioMenuIssue::FILTER_PARAMS_MY_OPEN ) do |issues|
+        @server.get_issues( project['id'], PlanioMenuIssue::get_filter ) do |issues|
           project_item = PlanioMenuProject.new( project, issues ).menu_item
           @projects.push project_item
           @menu.append project_item
