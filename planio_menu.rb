@@ -64,12 +64,20 @@ class PlanioMenu
   def initialize server
     @server = server
     @menu = Gtk::Menu.new
+    @projects = []
     
     @ai = AppIndicator::AppIndicator.new("planio-tracker", "indicator-messages", AppIndicator::Category::APPLICATION_STATUS)
     @ai.set_menu @menu
     @ai.set_status AppIndicator::Status::ACTIVE
 
-    refresh
+    add_refresh_button
+    add_stop_time_button
+    @menu.append Gtk::SeparatorMenuItem.new
+    @menu.show_all
+
+    refresh do
+      puts "Initial load done."
+    end
   end
 
   def start
@@ -79,36 +87,45 @@ class PlanioMenu
 protected
 
   def refresh
-    @menu.children.each do |item|
+    @projects.each do |item|
       @menu.remove item
     end
-    add_refresh_button
-    add_stop_time_button
-    @menu.append Gtk::SeparatorMenuItem.new
-    @menu.show_all
-    self.load_projects
+    @projects.clear
+    self.load_projects do
+      yield
+    end
   end
 
   def load_projects
     @server.get_projects do |projects| 
       projects.each do |project|
         @server.get_issues( project['id'], PlanioMenuIssue::FILTER_PARAMS_MY_OPEN ) do |issues|
-          @menu.append PlanioMenuProject.new( project, issues ).menu_item
+          project_item = PlanioMenuProject.new( project, issues ).menu_item
+          @projects.push project_item
+          @menu.append project_item
           @menu.show_all
         end
       end
       @server.wait_for_current_threads do
-        puts "projects refreshed"
-        #puts @server.threads.inspect
+        yield
       end
     end
   end
 
   def add_refresh_button
-      button = Gtk::MenuItem.new "Refresh projects and issues"
+      refreshing = 0 # Count if user clicked multiple times on the button; 
+      default_label = "Refresh projects and issues"
+      refreshing_label = "-- Refreshing projects and issues --"
+      button = Gtk::MenuItem.new default_label
       button.signal_connect "activate" do |my_menu_item|
+        refreshing += 1
+        button.label = refreshing_label
         @server.kill_current_threads
-        self.refresh
+        self.refresh do
+          refreshing -= 1
+          # only set the label if all callbacks returned
+          button.label = default_label if refreshing == 0
+        end
       end
       @menu.append button
   end
