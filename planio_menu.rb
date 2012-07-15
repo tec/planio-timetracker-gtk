@@ -88,6 +88,7 @@ class PlanioMenu
 
     add_refresh_button
     add_stop_time_button
+    add_close_button
     @menu.append Gtk::SeparatorMenuItem.new
     @menu.show_all
 
@@ -149,6 +150,15 @@ protected
       button.signal_connect "activate" do |my_menu_item|
         # TODO
         PlanioNotifier.show "Time tracking stopped"
+      end
+      @menu.append button
+  end
+
+  def add_close_button
+      button = Gtk::MenuItem.new "Close"
+      button.signal_connect "activate" do |my_menu_item|
+        PlanioNotifier.show "", "closed"
+        Gtk.main_quit
       end
       @menu.append button
   end
