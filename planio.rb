@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 require "rubygems"
 require 'yaml'
-require './planio_server.rb'
-require './planio_menu.rb'
+require './lib/planio_server.rb'
+require './lib/planio_menu.rb'
 
 planio_config = YAML::load(File.read(File.join(ENV['HOME'], '.planio')))
 planio_server = PlanioServer.new planio_config

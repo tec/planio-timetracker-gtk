@@ -1,5 +1,5 @@
 require "ruby-libappindicator"
-require './planio_notifier.rb'
+require './lib/planio_notifier.rb'
 
 class PlanioMenuIssue
   FILTER_PARAMS        = [["set_filter", "1"]]
