@@ -10,7 +10,7 @@ Configure your plan.io (or redmine or derivate like chiliproject):
 Check that the rest api is enabled on the authentication tab on https://pidoco.plan.io/settings
 Find your apikey on the right side panel on https://pidoco.plan.io/my/account
 
-Create a file in your home dir called .planio with two lines:
+Create the folder .planio in your home dir and a file called .planio/config with two lines:
 <pre>
 domain: your_team.plan.io
 apikey: your_api_key

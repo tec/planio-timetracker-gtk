@@ -68,20 +68,9 @@ class PlanioServer
       yield issues
     end
   end
-  def start_project_timer project_id, started_at = nil
-    # TODO
-  end
-
-  def start_issue_timer issue_id, started_at = nil
-    # TODO
-  end
-
-  def stop_timer
-    # TODO
-  end
 
   def track_time
-    # TODO
+    yield false
   end
 
   def threads
