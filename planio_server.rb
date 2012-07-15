@@ -17,7 +17,6 @@ class PlanioServer
     @threads << Thread.new(uri) do |uri|
       Thread.current[:name] = uri.path
       req = Net::HTTP::Get.new(uri.request_uri)
-      #puts uri.request_uri
       req.basic_auth @apikey, 'nopass'
 
       res = Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') {|http|

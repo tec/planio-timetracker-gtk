@@ -1,8 +1,9 @@
 Use https://rvm.io/
-Install dependencies:
+Install dependencies (ruby-libappindicator is required, libnotify is optional for notifications):
 <pre>
-sudo apt-get install libappindicator-dev
+sudo apt-get install libappindicator-dev libinotify-ruby libgtk2-ruby libnotify-dev;
 gem install ruby-libappindicator
+gem install libnotify
 <pre>
 
 Configure your plan.io (or redmine or derivate like chiliproject):

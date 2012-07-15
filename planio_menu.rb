@@ -1,22 +1,29 @@
 require "ruby-libappindicator"
+require './planio_notifier.rb'
 
 class PlanioMenuIssue
   FILTER_PARAMS        = [["set_filter", "1"]]
   FILTER_PARAMS_OPEN   = [["f[]", "status_id"], ["op[status_id]", "o"], ["v[status_id][]", "1"]]
   FILTER_PARAMS_MY     = [["f[]", "assigned_to_id"], ["op[assigned_to_id]", "="], ["v[assigned_to_id][]", "me"]]
 
-  def initialize issue
+  def initialize project, issue
     @id = issue['id']
     @subject = issue['subject']
+    @project = project
 
     @menu_item = Gtk::MenuItem.new @subject
     @menu_item.signal_connect "activate" do |my_menu_item|
-      puts @id.to_s + ": " + @subject.to_s
+      track_time
     end
   end
 
   def menu_item
     @menu_item
+  end
+
+  def track_time
+    # TODO
+    PlanioNotifier.show "Time tracking started on \nproject '#{@project['name']}' \nissue '#{@subject}'", "tracking #{@project['id']}##{@id}"
   end
 
   def self.get_filter
@@ -29,7 +36,7 @@ class PlanioMenuProject
     @identifier = project['identifier']
     @id         = project['id']
     @name       = project['name']
-    create_menu issues
+    create_menu project, issues
   end
 
   def menu_item
@@ -38,18 +45,17 @@ class PlanioMenuProject
 
   protected
 
-  def create_menu issues
+  def create_menu project, issues
     @menu_item = Gtk::MenuItem.new @name
     if issues.empty?
       @menu_item.signal_connect "activate" do |my_menu_item|
-        # TODO
-        puts "starting #{@id}"
+        track_time
       end
     else
       @menu_item.submenu = Gtk::Menu.new
       add_track_time_button
       issues.each do |issue|
-        @menu_item.submenu.append PlanioMenuIssue.new( issue ).menu_item
+        @menu_item.submenu.append PlanioMenuIssue.new( project, issue ).menu_item
       end
     end
   end
@@ -57,11 +63,15 @@ class PlanioMenuProject
   def add_track_time_button
       button = Gtk::MenuItem.new "start time tracking on project"
       button.signal_connect "activate" do |my_menu_item|
-        # TODO
-        puts "starting #{@id}"
+        track_time
       end
       @menu_item.submenu.append button
       @menu_item.submenu.append Gtk::SeparatorMenuItem.new
+  end
+
+  def track_time
+        # TODO
+        PlanioNotifier.show "Time tracking started on project \n'#{@name}'", "tracking #{@id}"
   end
 end
 
@@ -81,7 +91,9 @@ class PlanioMenu
     @menu.append Gtk::SeparatorMenuItem.new
     @menu.show_all
 
-    refresh 
+    refresh do 
+      PlanioNotifier.show "Projects and issues successfully loaded", "refreshed"
+    end
   end
 
   def start
@@ -105,6 +117,7 @@ protected
           project_item = PlanioMenuProject.new( project, issues ).menu_item
           @projects.push project_item
           @menu.append project_item
+          @menu.reorder_child project_item, 0
           @menu.show_all
         end
       end
@@ -125,6 +138,7 @@ protected
           refreshing -= 1
           # only set the label if all callbacks returned
           button.label = default_label if refreshing == 0
+          PlanioNotifier.show "Projects and issues successfully loaded", "refreshed"
         end
       end
       @menu.append button
@@ -134,7 +148,7 @@ protected
       button = Gtk::MenuItem.new "Stop time tracking"
       button.signal_connect "activate" do |my_menu_item|
         # TODO
-        puts "stopping"
+        PlanioNotifier.show "Time tracking stopped"
       end
       @menu.append button
   end
