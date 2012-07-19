@@ -2,8 +2,13 @@ require 'yaml'
 
 class PlanioTracker
   def initialize
-    @projects = read_all
+    @config = read_config
+    @trackings = read_times
     @current = find_current
+  end
+
+  def get_config
+    @config
   end
 
   def get_current
@@ -11,34 +16,36 @@ class PlanioTracker
   end
 
   def get_stopped
-    @current
+    # TODO test
+    @trackings.reject{|tracking| tracking == @current}
   end
 
   def start_project project_id, started_at = DateTime.now
     stop unless @current.nil?
     @current = {:project => project_id, :started_at => started_at}
-    @projects << @current
-    write_all
+    @trackings << @current
+    write_times
   end
 
   def start_issue project_id, issue_id, started_at = DateTime.now
     stop unless @current.nil?
     @current = {:project => project_id, :issue => issue_id, :started_at => started_at}
-    @projects << @current
-    write_all
+    @trackings << @current
+    write_times
   end
 
   def stop
     @current[:stopped_at] = DateTime.now
+    @current = nil
   end
 
   def track_time server
     # copy the list just in case it gets modified during the server upload
-    projects = @projects.map
-    server.track_time projects do |successful|
+    trackings = @trackings.map
+    server.track_time trackings do |successful|
       if successful
-        projects.each do
-          @projects.remove projects
+        trackings.each do
+          @trackings.remove trackings
         end
       end
     end
@@ -47,26 +54,38 @@ class PlanioTracker
   protected
 
   def find_current
-    puts @projects
-    currents = @projects.select do |project|
+    currents = @trackings.select do |project|
       project[:stopped_at].nil?
     end
     throw MultiTrackingError if currents.size > 1
     return currents.first
   end
 
-  def read_all
+  def read_config
+    read '.planio/config'
+  end
+
+  def read_times
     begin
-      YAML::load(File.read(File.join(ENV['HOME'], '.planio/times')))
+      read '.planio/times'
     rescue
       []
     end
   end
 
-  def write_all
-    File.open(File.join(ENV['HOME'], '.planio/times'), 'w') do |out|
-      YAML.dump @projects, out
+  def write_times
+    write('.planio/times') do |out|
+      YAML.dump @trackings, out
     end
   end
 
+  def read home_path
+    YAML::load(File.read(File.join(ENV['HOME'], home_path)))
+  end
+
+  def write home_path
+    File.open(File.join(ENV['HOME'], home_path), 'w') do |out|
+      yield
+    end
+  end
 end
