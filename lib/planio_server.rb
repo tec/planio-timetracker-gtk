@@ -4,7 +4,8 @@ require 'json'
 
 class PlanioServer
 
-  def initialize planio_config
+  def initialize planio_tracker
+    planio_config = planio_tracker.get_config
     @base_uri = "https://" + planio_config['domain']
     @apikey = planio_config['apikey'] 
     @threads = []
@@ -70,6 +71,7 @@ class PlanioServer
   end
 
   def track_time
+    # TODO
     yield false
   end
 

@@ -6,7 +6,8 @@ class PlanioMenuIssue
   FILTER_PARAMS_OPEN   = [["f[]", "status_id"], ["op[status_id]", "o"], ["v[status_id][]", "1"]]
   FILTER_PARAMS_MY     = [["f[]", "assigned_to_id"], ["op[assigned_to_id]", "="], ["v[assigned_to_id][]", "me"]]
 
-  def initialize project, issue
+  def initialize tracker, project, issue
+    @tracker = tracker
     @id = issue['id']
     @subject = issue['subject']
     @project = project
@@ -22,7 +23,7 @@ class PlanioMenuIssue
   end
 
   def track_time
-    # TODO
+    @tracker.start_issue @project, {'id' => @id, 'name' => @subject}
     PlanioNotifier.show "Time tracking started on \nproject '#{@project['name']}' \nissue '#{@subject}'", "tracking #{@project['id']}##{@id}"
   end
 
@@ -32,7 +33,8 @@ class PlanioMenuIssue
 end
 
 class PlanioMenuProject
-  def initialize project, issues
+  def initialize tracker, project, issues
+    @tracker    = tracker
     @identifier = project['identifier']
     @id         = project['id']
     @name       = project['name']
@@ -55,7 +57,7 @@ class PlanioMenuProject
       @menu_item.submenu = Gtk::Menu.new
       add_track_time_button
       issues.each do |issue|
-        @menu_item.submenu.append PlanioMenuIssue.new( project, issue ).menu_item
+        @menu_item.submenu.append PlanioMenuIssue.new( @tracker, project, issue ).menu_item
       end
     end
   end
@@ -70,14 +72,15 @@ class PlanioMenuProject
   end
 
   def track_time
-        # TODO
-        PlanioNotifier.show "Time tracking started on project \n'#{@name}'", "tracking #{@id}"
+    @tracker.start_project( {'id' => @id, 'name' => @name} )
+    PlanioNotifier.show "Time tracking started on project \n'#{@name}'", "tracking #{@id}"
   end
 end
 
 class PlanioMenu
 
-  def initialize server
+  def initialize tracker, server
+    @tracker = tracker
     @server = server
     @menu = Gtk::Menu.new
     @projects = []
@@ -88,6 +91,7 @@ class PlanioMenu
 
     add_refresh_button
     add_stop_time_button
+    add_upload_trackings_button
     add_close_button
     @menu.append Gtk::SeparatorMenuItem.new
     @menu.show_all
@@ -115,9 +119,10 @@ protected
     @server.get_projects do |projects| 
       projects.each do |project|
         @server.get_issues( project['id'], PlanioMenuIssue::get_filter ) do |issues|
-          project_item = PlanioMenuProject.new( project, issues ).menu_item
+          project_item = PlanioMenuProject.new( @tracker, project, issues ).menu_item
           @projects.push project_item
           @menu.append project_item
+          # TODO: reorder does not work
           @menu.reorder_child project_item, 0
           @menu.show_all
         end
@@ -127,40 +132,67 @@ protected
   end
 
   def add_refresh_button
-      refreshing = 0 # Count if user clicked multiple times on the button; 
-      default_label = "Refresh projects and issues"
-      refreshing_label = "-- Refreshing projects and issues --"
-      button = Gtk::MenuItem.new default_label
-      button.signal_connect "activate" do |my_menu_item|
-        refreshing += 1
-        button.label = refreshing_label
-        @server.kill_current_threads
-        self.refresh do
-          refreshing -= 1
-          # only set the label if all callbacks returned
-          button.label = default_label if refreshing == 0
-          PlanioNotifier.show "Projects and issues successfully loaded", "refreshed"
-        end
+    refreshing = 0 # Count if user clicked multiple times on the button; 
+    default_label = "Refresh projects and issues"
+    refreshing_label = "-- Refreshing projects and issues --"
+    button = Gtk::MenuItem.new default_label
+    button.signal_connect "activate" do |my_menu_item|
+      refreshing += 1
+      button.label = refreshing_label
+      @server.kill_current_threads
+      self.refresh do
+        refreshing -= 1
+        # only set the label if all callbacks returned
+        button.label = default_label if refreshing == 0
+        PlanioNotifier.show "Projects and issues successfully loaded", "refreshed"
       end
-      @menu.append button
+    end
+    @menu.append button
   end
 
   def add_stop_time_button
-      button = Gtk::MenuItem.new "Stop time tracking"
-      button.signal_connect "activate" do |my_menu_item|
-        # TODO
-        PlanioNotifier.show "Time tracking stopped"
-      end
-      @menu.append button
+    button = Gtk::MenuItem.new "Stop time tracking"
+    button.signal_connect "activate" do |my_menu_item|
+      @tracker.stop
+      PlanioNotifier.show "Time tracking stopped"
+    end
+    @menu.append button
   end
 
   def add_close_button
-      button = Gtk::MenuItem.new "Close"
-      button.signal_connect "activate" do |my_menu_item|
-        PlanioNotifier.show "", "closed"
-        Gtk.main_quit
+    button = Gtk::MenuItem.new "Close"
+    button.signal_connect "activate" do |my_menu_item|
+      PlanioNotifier.show "", "closed"
+      Gtk.main_quit
+    end
+    @menu.append button
+  end
+
+  def add_upload_trackings_button
+    # TODO test
+    button = Gtk::MenuItem.new "Upload trackings"
+    button.signal_connect "activate" do |my_menu_item|
+      trackings = @tracker.get_stopped
+      show_comments_dialog
+      @server.track_time trackings do |successful|
+        if successful
+          @tracker.remove trackings
+          trackings_text = trackings.map do |tracking|
+            time = tracking[:started_at] - tracking[:stopped_at]
+            tracking[:issue_name].nil? ? tracking[:project_name] : trackings[:issue_name] +
+              ": #{time.to_s}" # TODO format nicely
+          end.join("\n")
+          PlanioNotifier.show trackings_text, "Time tracking uploaded"
+        else
+          PlanioNotifier.show "Time tracking upload error"
+        end
       end
       @menu.append button
+    end
+  end
+
+  def show_comments_dialog
+    # TODO
   end
 end
 

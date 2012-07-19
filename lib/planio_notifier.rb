@@ -2,7 +2,7 @@ begin
   require 'rubygems'
   require 'libnotify'
   class PlanioNotifier
-	@@libnotify = Libnotify.new
+    @@libnotify = Libnotify.new
     def self.show message, title = ""
       @@libnotify.update(:summary => "Planio: " + title, :body => message, :append => false)
     end

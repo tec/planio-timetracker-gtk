@@ -17,37 +17,36 @@ class PlanioTracker
 
   def get_stopped
     # TODO test
-    @trackings.reject{|tracking| tracking == @current}
+    # copy the list just in case it gets modified during the server upload
+    @trackings.reject{|tracking| tracking == @current}.map
   end
 
-  def start_project project_id, started_at = DateTime.now
+  def start_project project, started_at = DateTime.now
     stop unless @current.nil?
-    @current = {:project => project_id, :started_at => started_at}
+    @current = {:project_id => project_id, :project_name => project_name,
+                :started_at => started_at}
     @trackings << @current
     write_times
   end
 
-  def start_issue project_id, issue_id, started_at = DateTime.now
+  def start_issue project, issue, started_at = DateTime.now
     stop unless @current.nil?
-    @current = {:project => project_id, :issue => issue_id, :started_at => started_at}
+    @current = {:project_id => project_id, :project_name => project_name,
+                :issue_id => issue_id, :issue_name => issue_name,
+                :started_at => started_at}
     @trackings << @current
     write_times
   end
 
   def stop
-    @current[:stopped_at] = DateTime.now
+    @current[:stopped_at] = DateTime.now unless @current.nil?
     @current = nil
+    write_times
   end
 
-  def track_time server
-    # copy the list just in case it gets modified during the server upload
-    trackings = @trackings.map
-    server.track_time trackings do |successful|
-      if successful
-        trackings.each do
-          @trackings.remove trackings
-        end
-      end
+  def remove trackings
+    trackings.each do
+      @trackings.remove trackings
     end
   end
 
