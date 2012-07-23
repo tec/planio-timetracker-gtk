@@ -8,9 +8,10 @@ class PlanioMenuIssue
 
   def initialize tracker, project, issue
     @tracker = tracker
+    @project = project
+    @issue = issue
     @id = issue['id']
     @subject = issue['subject']
-    @project = project
 
     @menu_item = Gtk::MenuItem.new @subject
     @menu_item.signal_connect "activate" do |my_menu_item|
@@ -23,7 +24,7 @@ class PlanioMenuIssue
   end
 
   def track_time
-    @tracker.start_issue @project, {'id' => @id, 'name' => @subject}
+    @tracker.start @project, @issue
     PlanioNotifier.show "Time tracking started on \nproject '#{@project['name']}' \nissue '#{@subject}'", "tracking #{@project['id']}##{@id}"
   end
 
@@ -35,6 +36,7 @@ end
 class PlanioMenuProject
   def initialize tracker, project, issues
     @tracker    = tracker
+    @project    = project
     @identifier = project['identifier']
     @id         = project['id']
     @name       = project['name']
@@ -72,7 +74,7 @@ class PlanioMenuProject
   end
 
   def track_time
-    @tracker.start_project( {'id' => @id, 'name' => @name} )
+    @tracker.start @project
     PlanioNotifier.show "Time tracking started on project \n'#{@name}'", "tracking #{@id}"
   end
 end
@@ -169,30 +171,34 @@ protected
   end
 
   def add_upload_trackings_button
-    # TODO test
     button = Gtk::MenuItem.new "Upload trackings"
     button.signal_connect "activate" do |my_menu_item|
-      trackings = @tracker.get_stopped
-      show_comments_dialog
+      trackings = show_comments_dialog
       @server.track_time trackings do |successful|
         if successful
+          # TODO test the code for successful == true
           @tracker.remove trackings
           trackings_text = trackings.map do |tracking|
             time = tracking[:started_at] - tracking[:stopped_at]
-            tracking[:issue_name].nil? ? tracking[:project_name] : trackings[:issue_name] +
-              ": #{time.to_s}" # TODO format nicely
+            minutes = time / 60
+            hours = minutes / 60
+            minutes = minutes % 60
+            (tracking[:issue_name].nil? ? tracking[:project_name] : trackings[:issue_name]) + 
+              ": #{hours}:#{minutes}h"
           end.join("\n")
           PlanioNotifier.show trackings_text, "Time tracking uploaded"
         else
           PlanioNotifier.show "Time tracking upload error"
         end
       end
-      @menu.append button
     end
+    @menu.append button
   end
 
   def show_comments_dialog
-    # TODO
+    trackings = @tracker.get_stopped
+    # TODO show dialog that allows for adding comments
+    trackings
   end
 end
 

@@ -41,7 +41,7 @@ class PlanioServer
 
   def wait_for_current_threads
     Thread.new do
-      threads = @threads.map
+      threads = Array.new @threads
       threads.each { |thread|  
         thread.join
       }
@@ -70,8 +70,8 @@ class PlanioServer
     end
   end
 
-  def track_time
-    # TODO
+  def track_time trackings
+    # TODO upload trackings
     yield false
   end
 

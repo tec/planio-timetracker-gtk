@@ -16,24 +16,14 @@ class PlanioTracker
   end
 
   def get_stopped
-    # TODO test
     # copy the list just in case it gets modified during the server upload
-    @trackings.reject{|tracking| tracking == @current}.map
+    Array.new(@trackings.reject{|tracking| tracking == @current})
   end
 
-  def start_project project, started_at = DateTime.now
+  def start project, issue = nil, started_at = DateTime.now
     stop unless @current.nil?
-    @current = {:project_id => project_id, :project_name => project_name,
-                :started_at => started_at}
-    @trackings << @current
-    write_times
-  end
-
-  def start_issue project, issue, started_at = DateTime.now
-    stop unless @current.nil?
-    @current = {:project_id => project_id, :project_name => project_name,
-                :issue_id => issue_id, :issue_name => issue_name,
-                :started_at => started_at}
+    @current = {:project => project, :started_at => started_at}
+    @current[:issue] = issue unless issue.nil?
     @trackings << @current
     write_times
   end
@@ -66,7 +56,8 @@ class PlanioTracker
 
   def read_times
     begin
-      read '.planio/times'
+      times = read '.planio/times'
+      times.is_a?(Array) ? times : []
     rescue
       []
     end
@@ -78,13 +69,17 @@ class PlanioTracker
     end
   end
 
-  def read home_path
-    YAML::load(File.read(File.join(ENV['HOME'], home_path)))
+  def read path
+    YAML::load(File.read(home_path(path)))
   end
 
-  def write home_path
-    File.open(File.join(ENV['HOME'], home_path), 'w') do |out|
-      yield
+  def write path
+    File.open(home_path(path), 'w') do |out|
+      yield out
     end
+  end
+
+  def home_path path
+    File.join(ENV['HOME'], path)
   end
 end
