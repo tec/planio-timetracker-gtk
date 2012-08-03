@@ -87,7 +87,7 @@ class PlanioMenu
     @menu = Gtk::Menu.new
     @projects = []
     
-    @ai = AppIndicator::AppIndicator.new("planio-tracker", "indicator-messages", AppIndicator::Category::APPLICATION_STATUS)
+    @ai = AppIndicator::AppIndicator.new("planio-tracker", "planio", AppIndicator::Category::APPLICATION_STATUS, File.absolute_path("media/22"))
     @ai.set_menu @menu
     @ai.set_status AppIndicator::Status::ACTIVE
 
