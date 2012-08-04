@@ -71,8 +71,36 @@ class PlanioServer
   end
 
   def track_time trackings
-    # TODO upload trackings
-    yield false
+    success = true
+    threads = []
+    trackings.each do |tracking|
+      uri = URI(@base_uri + '/time_entries.json')
+      params = Hash.new
+      if tracking[:issue].nil? || tracking[:issue]['id'].nil?
+        params['time_entry[project_id]'] = tracking[:project]['id']
+      else
+        params['time_entry[issue_id]'] = tracking[:issue]['id']
+      end
+      # TODO find out day of time tracking
+      #params['spent_on'] = tracking[:project]['stopped_at']...
+      params['time_entry[hours]'] = (tracking[:stopped_at] - tracking[:started_at]) / 3600
+      #params['comments'] = ""
+      #params['activity_id'] = ...
+      uri.query = URI.encode_www_form(params) unless params.nil?
+      puts(uri.request_uri)
+      threads << Thread.new(uri) do |uri|
+        Thread.current[:name] = uri.path
+        req = Net::HTTP::Post.new(uri.request_uri)
+        req.basic_auth @apikey, 'nopass'
+
+        res = Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') {|http|
+          response = http.request(req)
+          success = false if response.message != 'Created'
+        }
+      end
+    end
+    threads.each { |aThread|  aThread.join }
+    yield success
   end
 
   def threads

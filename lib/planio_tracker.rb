@@ -20,7 +20,7 @@ class PlanioTracker
     Array.new(@trackings.reject{|tracking| tracking == @current})
   end
 
-  def start project, issue = nil, started_at = DateTime.now
+  def start project, issue = nil, started_at = Time.now
     stop unless @current.nil?
     @current = {:project => project, :started_at => started_at}
     @current[:issue] = issue unless issue.nil?
@@ -29,15 +29,16 @@ class PlanioTracker
   end
 
   def stop
-    @current[:stopped_at] = DateTime.now unless @current.nil?
+    @current[:stopped_at] = Time.now unless @current.nil?
     @current = nil
     write_times
   end
 
   def remove trackings
-    trackings.each do
-      @trackings.remove trackings
+    trackings.each do |tracking|
+      @trackings.delete_at(@trackings.index(tracking))
     end
+    write_times
   end
 
   protected

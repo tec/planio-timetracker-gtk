@@ -146,7 +146,6 @@ protected
   end
 
   def add_refresh_button
-    # TODO fix label
     refreshing = 0 # Count if user clicked multiple times on the button; 
     default_label = "Refresh projects and issues"
     refreshing_label = "-- Refreshing projects and issues --"
@@ -189,15 +188,13 @@ protected
       trackings = show_comments_dialog
       @server.track_time trackings do |successful|
         if successful
-          # TODO test the code for successful == true
           @tracker.remove trackings
           trackings_text = trackings.map do |tracking|
-            time = tracking[:started_at] - tracking[:stopped_at]
-            minutes = time / 60
-            hours = minutes / 60
-            minutes = minutes % 60
-            (tracking[:issue_name].nil? ? tracking[:project_name] : trackings[:issue_name]) + 
-              ": #{hours}:#{minutes}h"
+            time = tracking[:stopped_at] - tracking[:started_at]
+            (tracking[:issue].nil? || tracking[:issue]['subject'].nil? ?
+              tracking[:project]['name'] :
+              tracking[:issue]['subject']) +
+              ": " + Time.at(time).gmtime.strftime("%H:%M") + "h"
           end.join("\n")
           PlanioNotifier.show trackings_text, "Time tracking uploaded"
         else
