@@ -86,6 +86,7 @@ class PlanioMenu
     @server = server
     @menu = Gtk::Menu.new
     @projects = []
+    @mutex = Mutex.new
     
     @ai = AppIndicator::AppIndicator.new("planio-tracker", "planio", AppIndicator::Category::APPLICATION_STATUS, File.absolute_path("media/22"))
     @ai.set_menu @menu
@@ -110,30 +111,42 @@ class PlanioMenu
 protected
 
   def refresh &block
-    @projects.each do |item|
-      @menu.remove item
+    @mutex.synchronize do
+      @projects.each do |item|
+        @menu.remove item
+      end
+      @projects.clear
     end
-    @projects.clear
     self.load_projects &block
   end
 
   def load_projects &block
-    @server.get_projects do |projects| 
+    first_project_position = @menu.children.size
+    @server.get_projects do |projects|
       projects.each do |project|
         @server.get_issues( project['id'], PlanioMenuIssue::get_filter ) do |issues|
-          project_item = PlanioMenuProject.new( @tracker, project, issues ).menu_item
-          @projects.push project_item
-          @menu.append project_item
-          # TODO: reorder does not work
-          @menu.reorder_child project_item, 0
-          @menu.show_all
-        end
-      end
+          @mutex.synchronize do
+            project_item = PlanioMenuProject.new( @tracker, project, issues ).menu_item
+            added = false
+            @menu.children.each_with_index do |item, i|
+              if i >= first_project_position && item.label.casecmp(project_item.label) > 0
+                @menu.insert project_item, i
+                added = true
+                break
+              end
+            end # menu.children
+            @menu.append project_item unless added
+            @projects.push project_item
+            @menu.show_all
+          end # mutex
+        end # get_issues
+      end # projects.each
       @server.wait_for_current_threads &block
-    end
+    end # get_projects
   end
 
   def add_refresh_button
+    # TODO fix label
     refreshing = 0 # Count if user clicked multiple times on the button; 
     default_label = "Refresh projects and issues"
     refreshing_label = "-- Refreshing projects and issues --"
