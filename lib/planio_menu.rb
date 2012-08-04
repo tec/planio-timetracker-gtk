@@ -65,7 +65,7 @@ class PlanioMenuProject
   end
 
   def add_track_time_button
-      button = Gtk::MenuItem.new "start time tracking on project"
+      button = Gtk::MenuItem.new "Start time tracking on project"
       button.signal_connect "activate" do |my_menu_item|
         track_time
       end
