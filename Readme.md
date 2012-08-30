@@ -11,7 +11,7 @@ Usage
 
 Click on the application indicator and choose a project or ticket to start time tracking. Click stop when you are finished or click on the next task to start with the next task. If there is another project/tasks tracking time it will be stopped. All the times will be stored locally until you upload them.
 
-<img src="https://raw.github.com/tec/planio-user-js/master/media/screenshot.png" alt="Usage sample of planio-timetracker-gtk with the menu and several projects open."></img>
+<img src="https://raw.github.com/tec/planio-timetracker-gtk/master/media/screenshot.png" alt="Usage sample of planio-timetracker-gtk with the menu and several projects open."></img>
 
 Install Notes
 -------------
